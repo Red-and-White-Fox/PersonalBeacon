@@ -6,7 +6,8 @@ import name.betterbeacons.component.ModDataComponents;
 import name.betterbeacons.screen.BeaconTrinketScreenHandler;
 import name.betterbeacons.screen.ModScreenHandlers;
 import net.fabricmc.api.ModInitializer;
-
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -26,10 +27,6 @@ public class Betterbeacons implements ModInitializer {
 
 	// Create the item instance
 	public static final BeaconTrinketItem BEACON_TRINKET = new BeaconTrinketItem(new Item.Settings().maxCount(1));
-
-	public static final ScreenHandlerType<BeaconTrinketScreenHandler> BEACON_TRINKET_SCREEN_HANDLER =
-			Registry.register(Registries.SCREEN_HANDLER, Identifier.of("betterbeacons", "beacon_trinket"),
-					new ScreenHandlerType<>(BeaconTrinketScreenHandler::new, FeatureFlags.VANILLA_FEATURES));
 
 	@Override
 	public void onInitialize() {
