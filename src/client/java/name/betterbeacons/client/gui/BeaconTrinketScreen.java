@@ -26,23 +26,25 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
         int x = (width - backgroundWidth) / 2;
         int y = (height - backgroundHeight) / 2;
 
-        for (int row = 0; row < 4; row++) {
-            for (int col = 0; col < 3; col++) {
-                int effectIndex = row * 3 + col;
+        // 3 Rows, 4 Columns
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 4; col++) {
+                int effectIndex = row * 4 + col;
+
+                // X start moved from 105 to 90
                 this.addDrawableChild(new EffectButton(
-                        x + 125 + (col * 22), y + 11 + (row * 22), 20, 20,
+                        x + 100 + (col * 24), y + 15 + (row * 35), 20, 20,
                         effectIndex, this
                 ));
             }
         }
 
-        // Clear All Button
-        this.addDrawableChild(ButtonWidget.builder(Text.literal("X"), button -> {
-            // Use 'this.client' or 'BeaconTrinketScreen.this.client'
+        // Aligned the "X" button to the new grid start (x + 90)
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Clear all"), button -> {
             if (this.client != null && this.client.interactionManager != null) {
                 this.client.interactionManager.clickButton(this.handler.syncId, 100);
             }
-        }).dimensions(x + 125, y + 100, 64, 15).build());
+        }).dimensions(x + 15, y + 95, 80, 20).build());
     }
 
     @Override
@@ -102,22 +104,33 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
 
         @Override
         protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-            // 1. Draw the standard button texture (the gray box)
+            // 1. Draw the button box
             super.renderWidget(context, mouseX, mouseY, delta);
 
-            // 2. Calculate source coordinates in the PNG (44x44 grid)
-            float u = (float) (this.effectIndex % 3) * 44;
-            float v = (float) (this.effectIndex / 3) * 44;
+            // 2. Draw the Icon
+            // Note: Use % 3 if your PNG is still 3 columns wide, or % 4 if you changed it!
+            int u = (this.effectIndex % 3) * 44;
+            int v = (this.effectIndex / 3) * 44;
 
-            // 3. Draw with scaling
-            context.drawTexture(
-                    ICONS,
-                    this.getX() + 1, this.getY() + 1, // Target X, Y
-                    18, 18,                          // Target Width, Height (on screen)
-                    u, v,                            // Source U, V (in the file)
-                    44, 44,                          // Source Width, Height (how much to take from file)
-                    132, 176                         // Total File Width, Height
-            );
+            context.drawTexture(ICONS, this.getX() + 1, this.getY() + 1, 18, 18, u, v, 44, 44, 132, 176);
+
+            // 3. Draw the Level Number
+            int level = screen.getHandler().getLevelForIndex(this.effectIndex);
+            if (level > 0) {
+                String levelText = String.valueOf(level);
+
+                // Access the field directly: screen.textRenderer
+                int textWidth = screen.textRenderer.getWidth(levelText);
+
+                context.drawText(
+                        screen.textRenderer,
+                        levelText,
+                        this.getX() + (this.width / 2) - (textWidth / 2),
+                        this.getY() + this.height + 2, // 2 pixels below the button
+                        0xFFFFFF,
+                        true
+                );
+            }
         }
 
         @Override
@@ -132,6 +145,10 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
             }
             return false;
         }
+
+
     }
+
+
 
 }

@@ -1,5 +1,6 @@
 package name.betterbeacons.screen;
 
+import name.betterbeacons.Betterbeacons;
 import name.betterbeacons.item.BeaconTrinketItem;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -31,7 +32,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
 
     // CONSTRUCTOR 2: The actual logic
     public BeaconTrinketScreenHandler(int syncId, PlayerInventory playerInv, Inventory inventory, PropertyDelegate delegate, ItemStack stack) {
-        super(ModScreenHandlers.BEACON_TRINKET_SCREEN_HANDLER, syncId);
+        super(Betterbeacons.BEACON_TRINKET_SCREEN_HANDLER, syncId);
         checkSize(inventory, 12);
         checkDataCount(delegate, 2);
 
@@ -62,6 +63,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
         addPlayerHotbar(playerInv, invX, invY + 58);
 
         // Initial Calculation to sync points on open
+        this.sendContentUpdates();
         syncBeaconData();
     }
 
@@ -122,6 +124,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
 
                 syncBeaconData();
                 this.sendContentUpdates();
+                this.playerInventory.markDirty();
                 return true;
             }
         }
@@ -138,6 +141,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
 
                 syncBeaconData();
                 this.sendContentUpdates();
+                this.playerInventory.markDirty();
                 return true;
             }
         }
@@ -150,9 +154,12 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
 
             syncBeaconData();
             this.sendContentUpdates();
+            this.playerInventory.markDirty();
             return true;
         }
 
+        this.sendContentUpdates();
+        this.playerInventory.markDirty();
         return super.onButtonClick(player, id);
     }
 
@@ -316,5 +323,26 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
                     item == Items.GOLD_BLOCK   || item == Items.EMERALD_BLOCK ||
                     item == Items.DIAMOND_BLOCK|| item == Items.NETHERITE_BLOCK;
         }
+    }
+
+    public int getLevelForIndex(int index) {
+        String name = getEffectNameFromIndex(index);
+        if (name.equals("empty")) return 0;
+
+        // Logic: If we are on the client, we want to look at the player's
+        // actual equipped trinkets, which ARE synced by the Trinkets mod.
+        if (this.playerInventory.player.getWorld().isClient()) {
+            var component = dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(this.playerInventory.player);
+            if (component.isPresent()) {
+                var equipped = component.get().getEquipped(stack -> stack.getItem() instanceof BeaconTrinketItem);
+                if (!equipped.isEmpty()) {
+                    // Return the level from the ACTUAL synced stack in the trinket slot
+                    return BeaconTrinketItem.getEffectLevel(equipped.get(0).getRight(), name);
+                }
+            }
+        }
+
+        // Fallback for server-side or if trinket isn't found
+        return BeaconTrinketItem.getEffectLevel(this.trinketStack, name);
     }
 }
