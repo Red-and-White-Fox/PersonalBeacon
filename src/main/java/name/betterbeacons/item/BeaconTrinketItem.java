@@ -1,6 +1,5 @@
 package name.betterbeacons.item;
 
-import dev.emi.trinkets.api.SlotReference;
 import dev.emi.trinkets.api.TrinketItem;
 import name.betterbeacons.screen.BeaconTrinketScreenHandler;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
@@ -15,7 +14,6 @@ import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -121,26 +119,4 @@ public class BeaconTrinketItem extends TrinketItem {
         nbt.putInt(effectName + "_level", level);
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
     }
-
-    private boolean isReceivingBeaconPower(PlayerEntity player) {
-        // We check the player's current status effects
-        return player.getStatusEffects().stream().anyMatch(effect ->
-                // 1. Ambient particles = From a beacon (usually)
-                effect.isAmbient() &&
-                        // 2. Short duration = Currently being refreshed by a nearby source
-                        effect.getDuration() <= 320 && // 320 ticks = 16 seconds
-                        // 3. Match against standard beacon effect types
-                        isStandardBeaconEffect(effect.getEffectType())
-        );
-    }
-
-    private boolean isStandardBeaconEffect(RegistryEntry<StatusEffect> effect) {
-        return effect.equals(StatusEffects.SPEED) ||
-                effect.equals(StatusEffects.HASTE) ||
-                effect.equals(StatusEffects.RESISTANCE) ||
-                effect.equals(StatusEffects.JUMP_BOOST) ||
-                effect.equals(StatusEffects.STRENGTH) ||
-                effect.equals(StatusEffects.REGENERATION);
-    }
-
 }

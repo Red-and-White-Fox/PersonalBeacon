@@ -33,18 +33,18 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
 
                 // X start moved from 105 to 90
                 this.addDrawableChild(new EffectButton(
-                        x + 100 + (col * 24), y + 15 + (row * 35), 20, 20,
+                        x + 103 + (col * 24), y + 15 + (row * 35), 20, 20,
                         effectIndex, this
                 ));
             }
         }
 
-        // Aligned the "X" button to the new grid start (x + 90)
+        // Aligned the "X" button to the new grid start (x + 16)
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Clear all"), button -> {
             if (this.client != null && this.client.interactionManager != null) {
                 this.client.interactionManager.clickButton(this.handler.syncId, 100);
             }
-        }).dimensions(x + 15, y + 95, 80, 20).build());
+        }).dimensions(x + 16, y + 100, 75, 15).build());
     }
 
     @Override
@@ -74,9 +74,9 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
         // These coordinates are relative to the top-left of the GUI
 
         // Draw the Point Counter (Under the blue triangle)
-        context.drawText(this.textRenderer, "Power: " + totalPoints, 15, 40, 0x404040, false);
+        context.drawText(this.textRenderer, "Power: " + totalPoints, 18, 35, 0x404040, false);
 
-        context.drawText(this.textRenderer, "Charges: " + charges, 15, 50, 0xFFD700, false);
+        context.drawText(this.textRenderer, "Charges: " + charges, 18, 45, 0xFFD700, false);
     }
 
     @Override
@@ -85,8 +85,6 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
         super.render(context, mouseX, mouseY, delta);
         this.drawMouseoverTooltip(context, mouseX, mouseY);
     }
-
-
 
     // HELPER GETTERS - Move these here, outside the inner class!
     public MinecraftClient getScreenClient() { return this.client; }
