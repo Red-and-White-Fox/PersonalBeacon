@@ -8,7 +8,7 @@ import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 
 public record OpenBeaconTrinketPayload() implements CustomPayload {
-    public static final Id<OpenBeaconTrinketPayload> ID = new Id<>(Identifier.of(PersonalBeacon.MOD_ID, "open_gui"));
+    public static final Id<OpenBeaconTrinketPayload> ID = new Id<OpenBeaconTrinketPayload>(Identifier.of(PersonalBeacon.MOD_ID, "open_gui"));
     public static final PacketCodec<RegistryByteBuf, OpenBeaconTrinketPayload> CODEC = PacketCodec.unit(new OpenBeaconTrinketPayload());
 
     @Override

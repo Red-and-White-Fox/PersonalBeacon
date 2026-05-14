@@ -22,10 +22,10 @@ public class PersonalBeaconClient implements ClientModInitializer {
 		HandledScreens.register(PersonalBeacon.BEACON_TRINKET_SCREEN_HANDLER, BeaconTrinketScreen::new);
 
 		openTrinketGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.personalbeacon.open_gui", // Translation key
+				"key.personalbeacon.open_gui",
 				InputUtil.Type.KEYSYM,
-				GLFW.GLFW_KEY_G, // Default key
-				"category.personalbeacon" // Category in controls menu
+				GLFW.GLFW_KEY_G,
+				"category.personalbeacon"
 		));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {

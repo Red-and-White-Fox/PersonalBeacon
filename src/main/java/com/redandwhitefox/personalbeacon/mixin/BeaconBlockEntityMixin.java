@@ -26,11 +26,7 @@ public abstract class BeaconBlockEntityMixin {
     private static void onApplyPlayerEffects(World world, BlockPos pos, int beaconLevel, RegistryEntry<StatusEffect> primary, RegistryEntry<StatusEffect> secondary, CallbackInfo ci) {
         if (world.isClient) return;
 
-        // 1. Calculate the duration exactly like Minecraft does
-        // Formula: (9 + level * 2) * 20 ticks
         int duration = (9 + beaconLevel * 2) * 20;
-
-        // 2. Replicate the beacon's range logic
         double range = (double)beaconLevel * 10.0 + 10.0;
         Box box = (new Box(pos)).expand(range).stretch(0.0, (double)world.getHeight(), 0.0);
 
@@ -40,19 +36,17 @@ public abstract class BeaconBlockEntityMixin {
             TrinketsApi.getTrinketComponent(player).ifPresent(component -> {
                 var necklace = component.getEquipped(itemStack -> itemStack.getItem() instanceof BeaconTrinketItem);
 
-                if (!necklace.isEmpty()) {
-                    ItemStack stack = necklace.get(0).getRight();
-
-                    // 3. Apply custom effects using the calculated duration
-                    applyNecklaceEffects(player, stack, duration);
-                }
+                if (necklace.isEmpty()) return;
+                
+                ItemStack stack = necklace.get(0).getRight();
+                applyNecklaceEffects(player, stack, duration);
             });
         }
     }
 
     @ModifyConstant(method = "updateLevel", constant = @Constant(intValue = 4))
     private static int increaseMaxLevel(int original) {
-        return 8; // Allow up to 8 layers for example
+        return 8;
     }
 
     @ModifyVariable(method = "applyPlayerEffects", at = @At("STORE"), ordinal = 0)
@@ -81,7 +75,6 @@ public abstract class BeaconBlockEntityMixin {
         BeaconTrinketItem.applyEffect(player, stack, "dolphins_grace", StatusEffects.DOLPHINS_GRACE, duration);
 
         // Special Attribute-based Effects
-        // These require unique logic since they aren't standard potion effects
         BeaconTrinketItem.applySpecialAttributes(player, stack, duration);
     }
 }

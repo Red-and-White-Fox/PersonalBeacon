@@ -1,8 +1,12 @@
 package com.redandwhitefox.personalbeacon.screen;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.redandwhitefox.personalbeacon.PersonalBeacon;
 import com.redandwhitefox.personalbeacon.item.BeaconTrinketItem;
 
+import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -20,7 +24,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
     private final Inventory inventory;
     private final PropertyDelegate propertyDelegate;
     private final ItemStack trinketStack;
-    private final PlayerInventory playerInventory; // FIXED: Added field to store reference
+    private final PlayerInventory playerInventory;
     private boolean isSyncing = false;
 
     // This constructor is called on the CLIENT when opening the screen
@@ -39,7 +43,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
         this.inventory = inventory;
         this.propertyDelegate = delegate;
         this.trinketStack = stack;
-        this.playerInventory = playerInv; // FIXED: Initialized the field
+        this.playerInventory = playerInv;
 
         if (inventory instanceof SimpleInventory simpleInventory) {
             simpleInventory.addListener(this::onContentChanged);
@@ -75,29 +79,28 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
 
         super.onContentChanged(inventory);
 
-        if (this.playerInventory != null && !this.playerInventory.player.getWorld().isClient()) {
-            isSyncing = true;
-            try {
-                DefaultedList<ItemStack> items = DefaultedList.ofSize(12, ItemStack.EMPTY);
-                for (int i = 0; i < 12; i++) {
-                    items.set(i, this.inventory.getStack(i));
-                }
-
-                // Perform the NBT write
-                BeaconTrinketItem.saveInventory(
-                        this.trinketStack,
-                        items,
-                        this.playerInventory.player.getWorld().getRegistryManager()
-                );
-
-                // Update points/charges
-                syncBeaconData();
-            } catch (Exception e) {
-                // Log the error so you can see it in the console without a hard crash
-                e.printStackTrace();
-            } finally {
-                isSyncing = false;
+        if (this.playerInventory == null || this.playerInventory.player.getWorld().isClient()) return;
+        
+        isSyncing = true;
+        
+        try {
+            DefaultedList<ItemStack> items = DefaultedList.ofSize(12, ItemStack.EMPTY);
+            
+            for (int i = 0; i < 12; i++) {
+                items.set(i, this.inventory.getStack(i));
             }
+
+            BeaconTrinketItem.saveInventory(
+                    this.trinketStack,
+                    items,
+                    this.playerInventory.player.getWorld().getRegistryManager()
+            );
+
+            syncBeaconData();
+        } catch (Exception e) {
+        	PersonalBeacon.LOGGER.error("Failed to sync data", e);
+        } finally {
+            isSyncing = false;
         }
     }
 
@@ -110,6 +113,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
         // 1. UPGRADE Logic (0-11)
         if (id >= 0 && id <= 11) {
             String effectName = getEffectNameFromIndex(id);
+            
             if (effectName.equals("empty")) return false;
 
             int currentLevel = BeaconTrinketItem.getEffectLevel(trinketStack, effectName);
@@ -126,6 +130,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
                 changed = true;
             }
         }
+        
         // 2. DOWNGRADE Logic (50-61)
         else if (id >= 50 && id <= 61) {
             String effectName = getEffectNameFromIndex(id - 50);
@@ -140,15 +145,18 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
                 changed = true;
             }
         }
+        
         // 3. CLEAR ALL Logic (100)
         else if (id == 100) {
             for (int i = 0; i <= 11; i++) {
                 BeaconTrinketItem.setEffectLevel(trinketStack, getEffectNameFromIndex(i), 0);
             }
+            
             BeaconTrinketItem.setEffectLevel(trinketStack, "used_charges", 0);
 
             changed = true;
         }
+        
         if (changed) {
             syncBeaconData();
             this.sendContentUpdates(); // Force sync to client slots
@@ -171,7 +179,6 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
             case 8 -> "reach";
             case 9 -> "knockback_res";
             case 10 -> "vacuum";
-            //case 11 -> "empty";
             default -> "empty";
         };
     }
@@ -208,19 +215,21 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
     public double calculatePoints() {
         double basePoints = 0;
         double multiplier = 1.0;
-        java.util.Set<Item> uniqueBlocks = new java.util.HashSet<>();
+        Set<Item> uniqueBlocks = new HashSet<>();
 
         for (int i = 0; i < 12; i++) {
             ItemStack stack = this.inventory.getStack(i);
+            
             if (stack.isEmpty()) continue;
 
             Item item = stack.getItem();
             uniqueBlocks.add(item);
 
             double val = 0;
-            if (item == Items.COPPER_BLOCK) val = PersonalBeacon.CONFIG.trinketBeacon.copperValue;
-            else if (item == Items.IRON_BLOCK) val = PersonalBeacon.CONFIG.trinketBeacon.ironValue;
-            else if (item == Items.GOLD_BLOCK) val = PersonalBeacon.CONFIG.trinketBeacon.goldValue;
+            
+            if      (item == Items.COPPER_BLOCK)  val = PersonalBeacon.CONFIG.trinketBeacon.copperValue;
+            else if (item == Items.IRON_BLOCK)    val = PersonalBeacon.CONFIG.trinketBeacon.ironValue;
+            else if (item == Items.GOLD_BLOCK)    val = PersonalBeacon.CONFIG.trinketBeacon.goldValue;
             else if (item == Items.EMERALD_BLOCK) val = PersonalBeacon.CONFIG.trinketBeacon.emeraldValue;
             else if (item == Items.DIAMOND_BLOCK) val = PersonalBeacon.CONFIG.trinketBeacon.diamondValue;
 
@@ -241,12 +250,15 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
     public int calculateCharges(int points) {
         int cost = 650;
         int charges = 0;
+        
         while (points >= cost) {
             points -= cost;
             cost += 100;
             charges++;
+            
             if (charges >= 20) break;
         }
+        
         return charges;
     }
 
@@ -317,28 +329,31 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
         // We want the "Live" stack that Minecraft is currently syncing.
         ItemStack stackToRead = this.trinketStack;
 
-        if (this.playerInventory.player.getWorld().isClient()) {
-            // CASE A: Check Trinket Slots (Synced by Trinkets API)
-            var component = dev.emi.trinkets.api.TrinketsApi.getTrinketComponent(this.playerInventory.player);
-            if (component.isPresent()) {
-                var equipped = component.get().getEquipped(stack -> stack.getItem() instanceof BeaconTrinketItem);
-                if (!equipped.isEmpty()) {
-                    stackToRead = equipped.get(0).getRight();
-                } else {
-                    // CASE B: The item is in the hand/hotbar.
-                    // We MUST find the stack inside the ScreenHandler's slots.
-                    // These slots are automatically updated by the server's 'sendContentUpdates()'.
-                    for (Slot slot : this.slots) {
-                        ItemStack slotStack = slot.getStack();
-                        if (slotStack.getItem() instanceof BeaconTrinketItem) {
-                            stackToRead = slotStack;
-                            break;
-                        }
-                    }
+        if (!this.playerInventory.player.getWorld().isClient()) return BeaconTrinketItem.getEffectLevel(stackToRead, name);
+        
+        // CASE A: Check Trinket Slots (Synced by Trinkets API)
+        var component = TrinketsApi.getTrinketComponent(this.playerInventory.player);
+        
+        if (!component.isPresent()) return BeaconTrinketItem.getEffectLevel(stackToRead, name);
+        
+        var equipped = component.get().getEquipped(stack -> stack.getItem() instanceof BeaconTrinketItem);
+        
+        if (!equipped.isEmpty()) {
+            stackToRead = equipped.get(0).getRight();
+        } else {
+            // CASE B: The item is in the hand/hotbar.
+            // We MUST find the stack inside the ScreenHandler's slots.
+            // These slots are automatically updated by the server's 'sendContentUpdates()'.
+            for (Slot slot : this.slots) {
+                ItemStack slotStack = slot.getStack();
+                
+                if (slotStack.getItem() instanceof BeaconTrinketItem) {
+                    stackToRead = slotStack;
+                    break;
                 }
             }
         }
-
+        
         return BeaconTrinketItem.getEffectLevel(stackToRead, name);
     }
 
@@ -348,12 +363,15 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
      */
     public int getMaxActiveEffects() {
         int beaconCount = 0;
+        
         for (int i = 0; i < 12; i++) {
             ItemStack stack = this.inventory.getStack(i);
+            
             if (!stack.isEmpty() && stack.isOf(Items.BEACON)) {
                 beaconCount += stack.getCount();
             }
         }
+        
         return 1 + beaconCount;
     }
 
@@ -365,6 +383,7 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
         // Check all possible effects (0 to 10)
         for (int i = 0; i <= 11; i++) {
             String effectName = getEffectNameFromIndex(i);
+            
             if (!effectName.equals("empty") && BeaconTrinketItem.getEffectLevel(trinketStack, effectName) > 0) {
                 active++;
             }
@@ -384,7 +403,8 @@ public class BeaconTrinketScreenHandler extends ScreenHandler {
 
         public static boolean isAllowed(ItemStack stack) {
             Item item = stack.getItem();
-            return item == Items.COPPER_BLOCK || item == Items.IRON_BLOCK ||
+            
+            return item == Items.COPPER_BLOCK  || item == Items.IRON_BLOCK ||
                     item == Items.GOLD_BLOCK   || item == Items.EMERALD_BLOCK ||
                     item == Items.DIAMOND_BLOCK|| item == Items.NETHERITE_BLOCK ||
                     item == Items.BEACON;

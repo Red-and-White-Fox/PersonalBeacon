@@ -2,6 +2,7 @@ package com.redandwhitefox.personalbeacon;
 
 import dev.emi.trinkets.api.TrinketsApi;
 import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.ConfigHolder;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
@@ -41,32 +42,36 @@ import com.redandwhitefox.personalbeacon.screen.BeaconTrinketScreenHandler;
 
 public class PersonalBeacon implements ModInitializer {
 	public static final String MOD_ID = "personalbeacon";
-	public static PersonalBeaconConfig CONFIG;
+	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	public static final Identifier OPEN_GUI_PACKET_ID = Identifier.of(MOD_ID, "open_gui");
-	// 1. ADD THIS FIELD (Ensure it is public and static)
+	public static final BeaconTrinketItem BEACON_TRINKET = new BeaconTrinketItem(new Item.Settings().maxCount(1));
+	public static final DragonLeather DRAGON_LEATHER = new DragonLeather(new Item.Settings().rarity(Rarity.EPIC));
+	public static final BeaconMedaillon BEACON_MEDAILLON = new BeaconMedaillon(new Item.Settings().maxCount(1));
+	
 	public static final ScreenHandlerType<BeaconTrinketScreenHandler> BEACON_TRINKET_SCREEN_HANDLER =
 			Registry.register(
 					Registries.SCREEN_HANDLER,
 					Identifier.of(MOD_ID, "beacon_trinket"),
 					new ExtendedScreenHandlerType<>(BeaconTrinketScreenHandler::new, ItemStack.PACKET_CODEC)
-			);
-
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	public static final BeaconTrinketItem BEACON_TRINKET = new BeaconTrinketItem(new Item.Settings().maxCount(1));
-	public static final DragonLeather DRAGON_LEATHER = new DragonLeather(new Item.Settings().rarity(Rarity.EPIC));
-	public static final BeaconMedaillon BEACON_MEDAILLON = new BeaconMedaillon(new Item.Settings().maxCount(1));
+					);
+	
+	public static PersonalBeaconConfig CONFIG;
 
 	@Override
 	public void onInitialize() {
-		AutoConfig.register(PersonalBeaconConfig.class, (config, clazz) -> new GsonConfigSerializer<>(config, clazz));
-		CONFIG = AutoConfig.getConfigHolder(PersonalBeaconConfig.class).getConfig();
-
-		ModDataComponents.register();
+		// CONFIG
+		ConfigHolder<PersonalBeaconConfig> configHolder = AutoConfig.register(PersonalBeaconConfig.class, (config, clazz) -> new GsonConfigSerializer<>(config, clazz));
+		CONFIG = configHolder.getConfig();
+		configHolder.registerSaveListener((holder, config) -> {
+			return ActionResult.SUCCESS;
+		});
+		
+		// ITEM REGISTRY
 		Registry.register(Registries.ITEM, Identifier.of(MOD_ID, "dragon_leather"), DRAGON_LEATHER);
 		Registry.register(Registries.ITEM, Identifier.of(MOD_ID, "beacon_medaillon"), BEACON_MEDAILLON);
 		Registry.register(Registries.ITEM, Identifier.of(MOD_ID, "beacon_trinket"), BEACON_TRINKET);
 
+		// LOOT TABLE REGISTRY
 		LootTableEvents.MODIFY.register((key, tableBuilder, source, registries) -> {
 			if (EntityType.ENDER_DRAGON.getLootTableId().equals(key)) {
 				LootPool.Builder poolBuilder = LootPool.builder()
@@ -87,6 +92,7 @@ public class PersonalBeacon implements ModInitializer {
 			}
 		});
 
+		// NETWORKING
 		PayloadTypeRegistry.playC2S().register(OpenBeaconTrinketPayload.ID, OpenBeaconTrinketPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(OpenBeaconTrinketPayload.ID, (payload, context) -> {
@@ -96,15 +102,22 @@ public class PersonalBeacon implements ModInitializer {
 
 				// 1. Check Trinket Slot
 				var trinketComp = TrinketsApi.getTrinketComponent(player);
+				
 				if (trinketComp.isPresent()) {
 					var equipped = trinketComp.get().getEquipped(s -> s.getItem() instanceof BeaconTrinketItem);
-					if (!equipped.isEmpty()) stack = equipped.get(0).getRight();
+					
+					if (!equipped.isEmpty()) {
+						stack = equipped.get(0).getRight();
+					}
 				}
 
 				// 2. If not in Trinket slot, check Hands (Important for Right-Click logic!)
 				if (stack.isEmpty()) {
-					if (player.getMainHandStack().getItem() instanceof BeaconTrinketItem) stack = player.getMainHandStack();
-					else if (player.getOffHandStack().getItem() instanceof BeaconTrinketItem) stack = player.getOffHandStack();
+					if (player.getMainHandStack().getItem() instanceof BeaconTrinketItem) {
+						stack = player.getMainHandStack();
+					} else if (player.getOffHandStack().getItem() instanceof BeaconTrinketItem) {
+						stack = player.getOffHandStack();
+					}
 				}
 
 				if (!stack.isEmpty()) {
@@ -117,14 +130,7 @@ public class PersonalBeacon implements ModInitializer {
 						}
 					});
 				}
-
 			});
-		});
-
-		AutoConfig.getConfigHolder(PersonalBeaconConfig.class).registerSaveListener((holder, config) -> {
-			// This code runs whenever the config is saved via Mod Menu
-			// You can put logic here to update things immediately
-			return ActionResult.SUCCESS;
 		});
 	}
 }

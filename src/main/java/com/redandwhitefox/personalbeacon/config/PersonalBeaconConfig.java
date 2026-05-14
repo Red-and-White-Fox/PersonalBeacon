@@ -9,6 +9,10 @@ import java.util.List;
 
 import com.redandwhitefox.personalbeacon.PersonalBeacon;
 
+// TODO: Add option to turn off the requirement of being in the range of a vanilla beacon
+// TODO: Make the blocks data-driven, so any block can be added as a base block (this would require GUI rework)
+// TODO: Configurable points and multiplier per block
+// TODO: Add option to put any available effect in the beacon (this would require GUI rework)
 @Config(name = PersonalBeacon.MOD_ID)
 public class PersonalBeaconConfig implements ConfigData {
 

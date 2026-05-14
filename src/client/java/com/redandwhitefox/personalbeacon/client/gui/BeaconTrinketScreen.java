@@ -27,7 +27,7 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
             Items.EMERALD_BLOCK.getDefaultStack(),
             Items.DIAMOND_BLOCK.getDefaultStack(),
             Items.NETHERITE_BLOCK.getDefaultStack(),
-            Items.BEACON.getDefaultStack() // The 7th item
+            Items.BEACON.getDefaultStack()
     );
 
     public BeaconTrinketScreen(BeaconTrinketScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -153,7 +153,6 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
         this.drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
-    // HELPER GETTERS - Move these here, outside the inner class!
     public MinecraftClient getScreenClient() { return this.client; }
     public BeaconTrinketScreenHandler getHandler() { return this.handler; }
 
@@ -193,6 +192,7 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
 
             // 3. Draw the Level Number
             int level = screen.getHandler().getLevelForIndex(this.effectIndex);
+            
             if (level > 0) {
                 String levelText = String.valueOf(level);
 
@@ -214,12 +214,15 @@ public class BeaconTrinketScreen extends HandledScreen<BeaconTrinketScreenHandle
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (this.active && this.visible && this.clicked(mouseX, mouseY)) {
                 int packetId = (button == 1) ? (this.effectIndex + 50) : this.effectIndex;
+                
                 if (screen.getScreenClient().interactionManager != null) {
                     screen.getScreenClient().interactionManager.clickButton(screen.getHandler().syncId, packetId);
                     this.playDownSound(screen.getScreenClient().getSoundManager());
                 }
+                
                 return true;
             }
+            
             return false;
         }
     }
